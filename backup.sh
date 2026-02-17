@@ -15,7 +15,7 @@ TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
 BACKUP_FILE="$BACKUP_DIR/openclaw-backup-${TIMESTAMP}.tar.gz"
 
 echo "[backup] Создаю бэкап volume openclaw-data..."
-docker run --rm \
+MSYS_NO_PATHCONV=1 docker run --rm \
   -v openclaw_openclaw-data:/data:ro \
   -v "$BACKUP_DIR":/backup \
   alpine tar -czf "/backup/openclaw-backup-${TIMESTAMP}.tar.gz" -C / data/
