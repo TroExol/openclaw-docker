@@ -6,7 +6,8 @@
 #   ./oc.sh stop      — остановить
 #   ./oc.sh restart   — перезапустить
 #   ./oc.sh logs      — логи (follow)
-#   ./oc.sh update    — подтянуть новый образ + перезапустить
+#   ./oc.sh update    — обновить базовый образ + пересобрать custom + перезапустить
+#   ./oc.sh rebuild   — пересобрать custom (без обновления базового)
 #   ./oc.sh backup    — бэкап вручную
 #   ./oc.sh health    — проверка здоровья
 # ==============================================================================
@@ -36,11 +37,21 @@ case "$CMD" in
     docker compose logs -f openclaw
     ;;
   update)
-    echo "[oc] Подтягиваю свежие образы..."
-    docker compose pull
+    echo "[oc] Подтягиваю свежие базовые образы..."
+    docker pull coollabsio/openclaw:latest
+    docker pull coollabsio/openclaw-browser:latest
+    echo "[oc] Пересобираю кастомный образ..."
+    docker build --no-cache -t openclaw:custom .
     echo "[oc] Перезапускаю..."
     docker compose up -d
     echo "[oc] Обновление завершено."
+    ;;
+  rebuild)
+    echo "[oc] Пересобираю кастомный образ (без обновления базового)..."
+    docker build -t openclaw:custom .
+    echo "[oc] Перезапускаю..."
+    docker compose up -d
+    echo "[oc] Готово."
     ;;
   backup)
     bash "$SCRIPT_DIR/backup.sh"
@@ -58,7 +69,8 @@ case "$CMD" in
     echo "  stop      Остановить"
     echo "  restart   Перезапустить"
     echo "  logs      Логи (follow)"
-    echo "  update    Обновить образ + перезапустить"
+    echo "  update    Обновить базовый образ + пересобрать custom + перезапустить"
+    echo "  rebuild   Пересобрать custom (без обновления базового)"
     echo "  backup    Бэкап вручную"
     echo "  health    Проверка здоровья"
     ;;
