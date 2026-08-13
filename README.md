@@ -1,69 +1,70 @@
 # OpenClaw Docker
 
-**Docker-сетап для [OpenClaw](https://github.com/openclaw/openclaw) на базе [coollabsio/openclaw](https://github.com/coollabsio/openclaw).**
+**A Docker setup for [OpenClaw](https://github.com/openclaw/openclaw), built on top of [coollabsio/openclaw](https://github.com/coollabsio/openclaw).**
 
-Кастомный образ с дополнительными инструментами, Qdrant для векторного поиска, управление одной командой, ежедневные бэкапы.
+Custom image with extra tooling, Qdrant for vector search, single-command management and scheduled backups.
 
-## Quick Start
+## Quick start
 
 ```bash
 cp example.env .env
-# Заполнить .env — как минимум AUTH_PASSWORD и один провайдер (ANTHROPIC_API_KEY)
+# Fill in .env — at minimum AUTH_PASSWORD and one provider (ANTHROPIC_API_KEY)
 
-./rebuild-custom-image.sh   # собрать кастомный образ
+./rebuild-custom-image.sh   # build the custom image
 ./oc.sh start
 ```
 
-Открыть `http://localhost:8080`, логин: `admin` / твой `AUTH_PASSWORD`.
+Open `http://localhost:8080` and log in with `admin` / your `AUTH_PASSWORD`.
 
-## Требования
+## Requirements
 
-- Docker Desktop (или Docker Engine) + Docker Compose v2
-- Bash (Git Bash на Windows подойдёт)
+- Docker Desktop (or Docker Engine) + Docker Compose v2
+- Bash (Git Bash works on Windows)
 
-## Структура
+## Layout
 
 ```
 openclaw/
-├── Dockerfile              # кастомный образ (доп. инструменты)
-├── rebuild-custom-image.sh # пересборка кастомного образа
-├── example.env             # шаблон переменных окружения
-├── docker-compose.yml      # compose (openclaw + browser + qdrant)
-├── oc.sh                   # управление одной командой
-├── backup.sh               # бэкап Docker volume
-├── setup-backup-task.ps1   # планировщик бэкапа (Windows)
-└── backups/                # архивы бэкапов
+├── Dockerfile              # custom image (extra tooling)
+├── rebuild-custom-image.sh # rebuild the custom image
+├── example.env             # environment variable template
+├── docker-compose.yml      # compose stack (openclaw + browser + qdrant)
+├── oc.sh                   # single-command management
+├── backup.sh               # Docker volume backup
+├── setup-backup-task.ps1   # backup scheduler (Windows)
+└── backups/                # backup archives
 ```
 
-Данные хранятся в Docker volumes: `openclaw-data`, `browser-data`, `qdrant-data`.
+State lives in Docker volumes: `openclaw-data`, `browser-data`, `qdrant-data`.
 
-## Управление
+## Management
 
-| Команда | Описание |
-|---------|----------|
-| `./oc.sh start` | Запустить |
-| `./oc.sh stop` | Остановить |
-| `./oc.sh restart` | Перезапустить |
-| `./oc.sh logs` | Логи (follow) |
-| `./oc.sh update` | Обновить образ + перезапустить |
-| `./oc.sh backup` | Бэкап вручную |
-| `./oc.sh health` | Проверка здоровья |
+| Command | Description |
+|---------|-------------|
+| `./oc.sh start` | Start |
+| `./oc.sh stop` | Stop |
+| `./oc.sh restart` | Restart |
+| `./oc.sh logs` | Follow logs |
+| `./oc.sh update` | Pull a newer image and restart |
+| `./oc.sh backup` | Back up on demand |
+| `./oc.sh health` | Health check |
 
-## Конфигурация
+## Configuration
 
-Все токены передаются через `.env` → env-переменные контейнера → автоматически конвертируются в `openclaw.json` скриптом `configure.js`.
+Every token is passed through `.env` → container environment variables → and is converted into
+`openclaw.json` automatically by `configure.js`.
 
-Полный список переменных: [coollabsio/openclaw README](https://github.com/coollabsio/openclaw#environment-variables).
+For the full variable list see the [coollabsio/openclaw README](https://github.com/coollabsio/openclaw#environment-variables).
 
-## Кастомный образ
+## Custom image
 
-Проект использует собственный Docker-образ `openclaw:custom`, собранный поверх `coollabsio/openclaw:latest`. В него добавлены:
+The stack runs a custom `openclaw:custom` image built on `coollabsio/openclaw:latest`, adding:
 
-- **todoist-ts-cli** — CLI для Todoist
-- **clawhub** — менеджер расширений OpenClaw
-- **nano** — текстовый редактор
+- **todoist-ts-cli** — Todoist CLI
+- **clawhub** — OpenClaw extension manager
+- **nano** — text editor
 
-Пересборка после изменений в `Dockerfile`:
+Rebuild after changing the `Dockerfile`:
 
 ```bash
 ./rebuild-custom-image.sh
@@ -72,33 +73,36 @@ openclaw/
 
 ## Qdrant
 
-В комплекте [Qdrant](https://qdrant.tech/) — векторная БД для семантического поиска. Доступен на портах `6333` (REST) и `6334` (gRPC). Защита через `QDRANT_API_KEY` в `.env`.
+[Qdrant](https://qdrant.tech/) ships with the stack as the vector database backing semantic search.
+It is exposed on ports `6333` (REST) and `6334` (gRPC), protected by `QDRANT_API_KEY` in `.env`.
 
-## Браузер
+## Browser
 
-В комплекте browser sidecar с VNC. Доступен по `http://localhost:8080/browser/`. Через него можно логиниться в сайты, OpenClaw переиспользует сессию через CDP.
+A browser sidecar with VNC is included, reachable at `http://localhost:8080/browser/`. Use it to sign in
+to sites manually — OpenClaw then reuses the authenticated session over CDP.
 
-## Бэкапы
+## Backups
 
 ```bash
 ./oc.sh backup
 ```
 
-Автоматический бэкап каждый день в 03:00 (Windows):
+Daily automatic backups at 03:00 on Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File setup-backup-task.ps1
 ```
 
-Бэкапы хранятся 7 дней в `backups/`, старые удаляются автоматически.
+Backups are kept for 7 days in `backups/`; older archives are pruned automatically.
 
-## Обновление
+## Updating
 
 ```bash
 ./oc.sh update
 ```
 
-Подтягивает свежие базовые образы (browser, qdrant) и перезапускает. Для обновления самого OpenClaw нужно также пересобрать кастомный образ:
+This pulls fresh base images (browser, qdrant) and restarts the stack. Updating OpenClaw itself also
+requires rebuilding the custom image:
 
 ```bash
 docker pull coollabsio/openclaw:latest
